@@ -15,4 +15,4 @@ pessoas que começaram a ter um contato mais recente com dinheiro (jovens )
 pessoas com a rotina corrida por causa de conciliação do trabalho com outros ambientes
 
 
-
+![Minha Imagem](diagramabd.png)
