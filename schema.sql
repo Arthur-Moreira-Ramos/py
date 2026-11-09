@@ -116,7 +116,7 @@ CREATE TABLE regra_distribuicao (
     objetivo_id INTEGER NOT NULL UNIQUE,
     porcentagem NUMERIC(5,2) NOT NULL,
 
-    CONSTRAINT fk_regra_objetivo
+    CONSTRAINT fk_regra_objetivo      
         FOREIGN KEY (objetivo_id)
         REFERENCES objetivo_financeiro(id),
 

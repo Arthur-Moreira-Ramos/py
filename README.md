@@ -16,3 +16,13 @@ pessoas com a rotina corrida por causa de conciliação do trabalho com outros a
 
 
 ![Minha Imagem](diagramabd.png)
+
+| Entidade A | Cardinalidade | Entidade B | Explicação |
+|---|:---:|---|---|
+| Usuário | 1:N | Renda | Um usuário pode ter várias fontes de renda. |
+| Usuário | 1:N | Categoria de despesa | Um usuário pode criar várias categorias. |
+| Categoria de despesa | 1:N | Despesa | Uma categoria pode classificar várias despesas. |
+| Usuário | 1:N | Despesa | Um usuário pode registrar várias despesas. |
+| Usuário | 1:N | Objetivo financeiro | Um usuário pode criar vários objetivos. |
+| Objetivo financeiro | 1:0..1 | Regra de distribuição | Um objetivo pode ter uma regra percentual ou nenhuma. |
+| Objetivo financeiro | 1:N | Aporte | Um objetivo pode receber vários aportes. |
