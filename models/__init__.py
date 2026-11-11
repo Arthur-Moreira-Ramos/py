@@ -1,0 +1,6 @@
+from models.aporte_objetivo import AporteObjetivo
+from model_catdespesa import CategoriaDespesa
+from model_renda import Renda
+from model_usuario import Usuario
+from objetivofinanceiro import ObjetivoFinanceiro
+from modo_de_distribuicao import RegraDistribuicao
