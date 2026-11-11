@@ -1,5 +1,5 @@
 # exemplo da tela:
-[minhaimagem](imagem.png)
+![minhaimagem](PFront-end.png)
 
 # tipografia: 
 Títulos das Seções (Ex: "Painel Geral"):
