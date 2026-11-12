@@ -1,116 +1,54 @@
-# Sumario
-[Parte de Banco de dados](#banco-de-dados)  
-[Banco de dados](banco-de-dados) 
+# MeuBolso — Etapa de interface (View)
 
-Meu projeto é uma controle financeiro.Cujo a ideia segue as ideias a seguir:  
+Reformulação visual do projeto integrador do aluno Arthur, utilizando **Python + Tkinter** e respeitando a tipografia e a paleta originalmente estabelecidas em `assets/Tipografia.md`.
 
-Objetivo:
-Fazer uma carteira digital ou apenas um programa. Que pegue ou você forneça, o quanto você ganha em certo espaço de tempo da sua preferência (Diariamente, Semanalmente, Mensalmente) e despesas mensais pra poder dividir e organizar seu dinheiro de acordo com as seus objetivos e perído pra alcança-los  (investimento, viagem, presentear alguém e etc)
-Banco de dados: 
-porcentagem fixa da divisão de acordo com a quantidade de dinheiro que sobra e tipos diferentes de despesas. Pode envolver uma função pra calcular 
-Quanto que ele ganha 
-Sua despesa mensal 
-divisão das despesas 
-Público-alvo:
-pessoas que começaram a ter um contato mais recente com dinheiro (jovens )
-pessoas com a rotina corrida por causa de conciliação do trabalho com outros ambientes
+## Executar
 
-## banco de dados:
+Requer Python 3.10 ou superior com Tkinter instalado.
 
-![Minha Imagem](diagramabd.png)
-
-| Entidade A | Cardinalidade | Entidade B | Explicação |
-|---|:---:|---|---|
-| Usuário | 1:N | Renda | Um usuário pode ter várias fontes de renda. |
-| Usuário | 1:N | Categoria de despesa | Um usuário pode criar várias categorias. |
-| Categoria de despesa | 1:N | Despesa | Uma categoria pode classificar várias despesas. |
-| Usuário | 1:N | Despesa | Um usuário pode registrar várias despesas. |
-| Usuário | 1:N | Objetivo financeiro | Um usuário pode criar vários objetivos. |
-| Objetivo financeiro | 1:0..1 | Regra de distribuição | Um objetivo pode ter uma regra percentual ou nenhuma. |
-| Objetivo financeiro | 1:N | Aporte | Um objetivo pode receber vários aportes. |
-
-## Prototipação do Front-end
-
-### exemplo da tela:
-![minhaimagem](PFront-end.png)
-
-### tipografia: 
-Títulos das Seções (Ex: "Painel Geral"):
-
-font-family: 'Inter', sans-serif;
-
-font-size: 24px;
-
-font-weight: 700 (Bold);
-
-color: #FFFFFF;
-
-Subtítulos e Cards (Ex: "Saldo Total", "Minhas Rendas"):
-
-font-size: 14px;
-
-font-weight: 500 (Medium);
-
-color: #94A3B8 (Cinza Azulado);
-
-Valores de Destaque (Ex: "R$ 3.500,00"):
-
-font-size: 28px;
-
-font-weight: 700 (Bold);
-
-color: #FFFFFF ou #10B981 (Verde para positivo) / #EF4444 (Vermelho para despesas).
-
-Textos de Tabelas e Inputs:
-
-font-size: 13px;
-
-font-weight: 400 (Regular);
-
-color: #E2E8F0;
-
-Texto de Navegação (Menu Lateral):
-
-font-size: 14px;
-
-font-weight: 500 (Medium);
-
-2. Paleta de Cores
-Fundo do App (Background): #0F172A (Azul bem escuro / Slate 900)
-
-Fundo dos Cards e Modais: #1E293B (Azul escuro / Slate 800)
-
-Barra de Navegação Lateral: #0F172A com separadores sutis em #334155
-
-Destaque / Ação Primária (Verde): #10B981 (Para receitas, botões de salvar e saldos positivos)
-
-Ação Secundária / Alerta (Vermelho): #EF4444 (Para despesas, pendências)
-
-Textos Secundários / Desativados: #64748B ou #94A3B8
+```bash
+python main.py
 ```
-py
-├─ assets
-│  ├─ PFront-end.png
-│  └─ Tipografia.md
-├─ conexao.py
-├─ controllers
-├─ database
-├─ diagramabd.png
-├─ main.py
-├─ MeuBolsoView.py
-├─ models
-│  ├─ aporte_objetivo.py
-│  ├─ base_model.py
-│  ├─ modelo_despesa.py
-│  ├─ model_catdespesa.py
-│  ├─ model_renda.py
-│  ├─ model_usuario.py
-│  ├─ modo_de_distribuicao.py
-│  ├─ objetivofinanceiro.py
-│  └─ __init__.py
-├─ PFront-end.png
-├─ README.md
-├─ schema.sql
-└─ views
 
+No Linux, algumas distribuições exigem a instalação do pacote `python3-tk`.
+
+**A fonte Inter é utilizada se estiver instalada no sistema operacional; caso contrário, o Tkinter utiliza sua fonte substituta.** Instale a fonte Inter localmente para obter a aparência pretendida. Nenhum arquivo de fonte acompanha o projeto.
+
+## Escopo desta entrega
+
+- Sete páginas: Dashboard, Rendas, Categorias, Despesas, Objetivos, Regras e Aportes.
+- Navegação por menu lateral, destaque do item ativo e estados de hover.
+- Cartões, tabela ilustrativa, gráfico de evolução, composição de despesas, barras de progresso animadas.
+- Formulários exclusivamente visuais para as principais operações de cadastro.
+- Feedback explícito de modo de demonstração.
+- Paleta do aluno: `#0F172A`, `#1E293B`, `#10B981`, `#EF4444`, `#94A3B8`.
+- Tipografia: Inter, títulos 24 px, valores de destaque e textos com hierarquia.
+
+## Não implementado deliberadamente
+
+- Controllers, autenticação ou qualquer integração PostgreSQL.
+- Gravação, edição ou exclusão de registros.
+- Validação de dados, cálculo financeiro real e atualização dos gráficos.
+- Operações bancárias.
+
+Todos os números do projeto estão centralizados no arquivo `views/data_demo.py` e são **fictícios**. Os campos aceitam digitação para demonstrar a experiência, mas o botão **Salvar · em breve** está inativo intencionalmente.
+
+## Estrutura
+
+```text
+main.py
+views/
+  main_view.py     # estrutura principal e troca de telas
+  sidebar.py       # menu, seleção e hover
+  pages.py         # páginas e formulários visuais
+  components.py    # componentes reutilizáveis e animações
+  styles.py        # identidade visual
+  data_demo.py     # dados fictícios de demonstração
+assets/
+  Tipografia.md
+  referencia_original.png
 ```
+
+## Próxima etapa: Controllers
+
+Conectar eventos dos botões a controllers e ligar models/repositories ao PostgreSQL. Não confundir os valores fictícios com registros reais. As páginas foram divididas por função para facilitar essa integração futura.

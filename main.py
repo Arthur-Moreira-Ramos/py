@@ -1,12 +1,5 @@
-
+"""Inicialização do protótipo visual MeuBolso (somente View)."""
 from views.main_view import MainView
 
-def main():
-    # Inicializa a View principal
-    app = MainView()
-    app.mainloop()
-
-if __name__ == "__main__":
-    main()
-
-
+if __name__ == '__main__':
+    MainView().mainloop()

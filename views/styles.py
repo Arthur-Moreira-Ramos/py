@@ -1,19 +1,22 @@
-# views/styles.py
+"""Tokens visuais definidos pelo aluno no arquivo assets/Tipografia.md."""
+BG = '#0F172A'
+SIDEBAR = '#101B2F'
+CARD = '#1E293B'
+CARD_HOVER = '#25354A'
+BORDER = '#334155'
+GREEN = '#10B981'
+GREEN_DARK = '#065F46'
+GREEN_SOFT = '#123D39'
+RED = '#EF4444'
+RED_SOFT = '#482B36'
+WHITE = '#FFFFFF'
+TEXT = '#E2E8F0'
+MUTED = '#94A3B8'
+DIM = '#64748B'
+BLUE = '#60A5FA'
+AMBER = '#FBBF24'
+PURPLE = '#A78BFA'
+FONT = 'Inter'
 
-# Paleta de Cores
-BG_COLOR = "#0F172A"          # Fundo do App
-CARD_BG = "#1E293B"           # Fundo dos Cards e Modais
-SIDEBAR_BG = "#0F172A"        # Barra de Navegação Lateral
-SEPARATOR_COLOR = "#334155"   # Separadores
-ACCENT_GREEN = "#10B981"      # Destaque / Receitas / Positivo
-ACCENT_RED = "#EF4444"        # Alerta / Despesas
-TEXT_TITLE = "#FFFFFF"        # Títulos
-TEXT_SUB = "#94A3B8"          # Subtítulos / Cards / Desativados
-TEXT_TABLE = "#E2E8F0"        # Textos de Tabelas e Inputs
-
-# Fontes
-FONT_TITLE = ("Inter", 20, "bold")
-FONT_SUBTITLE = ("Inter", 11)
-FONT_VALUE = ("Inter", 20, "bold")
-FONT_LABEL = ("Inter", 10)
-FONT_MENU = ("Inter", 11, "bold")
+def font(size=13, weight='normal'):
+    return (FONT, size, weight)
