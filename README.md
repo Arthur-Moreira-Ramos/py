@@ -87,3 +87,30 @@ Destaque / Ação Primária (Verde): #10B981 (Para receitas, botões de salvar e
 Ação Secundária / Alerta (Vermelho): #EF4444 (Para despesas, pendências)
 
 Textos Secundários / Desativados: #64748B ou #94A3B8
+```
+py
+├─ assets
+│  ├─ PFront-end.png
+│  └─ Tipografia.md
+├─ conexao.py
+├─ controllers
+├─ database
+├─ diagramabd.png
+├─ main.py
+├─ MeuBolsoView.py
+├─ models
+│  ├─ aporte_objetivo.py
+│  ├─ base_model.py
+│  ├─ modelo_despesa.py
+│  ├─ model_catdespesa.py
+│  ├─ model_renda.py
+│  ├─ model_usuario.py
+│  ├─ modo_de_distribuicao.py
+│  ├─ objetivofinanceiro.py
+│  └─ __init__.py
+├─ PFront-end.png
+├─ README.md
+├─ schema.sql
+└─ views
+
+```
