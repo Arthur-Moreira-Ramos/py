@@ -52,3 +52,16 @@ assets/
 ## Próxima etapa: Controllers
 
 Conectar eventos dos botões a controllers e ligar models/repositories ao PostgreSQL. Não confundir os valores fictícios com registros reais. As páginas foram divididas por função para facilitar essa integração futura.
+
+
+## Nitidez e ícones (correção de UI)
+
+- Adicionados ícones PNG antialiasados em `views/assets/icons/`, usados por `Icon` com Pillow.
+- Removidos os ícones geométricos desenhados diretamente sobre `Canvas` de 10–18 pixels.
+- DPI awareness do Windows ativada em `main.py` **antes de importar Tkinter**.
+- Removido `tk scaling=1.0`, que ignorava a escala real do monitor.
+- Mantida a paleta e a tipografia Inter (instale Inter localmente no Windows se desejar essa fonte exata).
+- Instale dependências: `python -m pip install -r requirements.txt`.
+- Inicie a partir da raiz: `python main.py`. Evite iniciar `views/main_view.py` diretamente.
+- Caso o Windows continue ampliando uma janela antiga, reinicie o programa e confira as configurações de escala do Windows.
+- O projeto continua **apenas visual**, com dados demonstrativos e sem controllers.

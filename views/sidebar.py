@@ -15,18 +15,23 @@ MENU = [
 
 class Sidebar(tk.Frame):
     def __init__(self, master, on_navigate):
-        super().__init__(master, bg=SIDEBAR, width=220, highlightbackground=BORDER, highlightthickness=1)
+        super().__init__(master, bg=SIDEBAR, width=220,
+                         highlightbackground=BORDER, highlightthickness=1)
         self.pack_propagate(False)
         self.on_navigate = on_navigate
         self.buttons = {}
 
         brand = tk.Frame(self, bg=SIDEBAR)
         brand.pack(fill='x', padx=20, pady=(24, 6))
-        Icon(brand, 'brand', 18, GREEN, SIDEBAR).pack(side='left', pady=1)
+        Icon(brand, 'wallet', 20, GREEN, SIDEBAR).pack(
+            side='left', pady=1, padx=(0, 2))
         lbl(brand, ' MeuBolso', 17, WHITE, True).pack(side='left')
-        lbl(self, 'SEU DINHEIRO, SEM COMPLICAÇÃO', 8, DIM, True, bg=SIDEBAR).pack(anchor='w', padx=22, pady=(0, 28))
-        tk.Frame(self, bg=BORDER, height=1).pack(fill='x', padx=18, pady=(0, 18))
-        lbl(self, 'MENU PRINCIPAL', 8, DIM, True, bg=SIDEBAR).pack(anchor='w', padx=22, pady=(0, 10))
+        lbl(self, 'SEU DINHEIRO, SEM COMPLICAÇÃO', 8, DIM, True,
+            bg=SIDEBAR).pack(anchor='w', padx=22, pady=(0, 28))
+        tk.Frame(self, bg=BORDER, height=1).pack(
+            fill='x', padx=18, pady=(0, 18))
+        lbl(self, 'MENU PRINCIPAL', 8, DIM, True, bg=SIDEBAR).pack(
+            anchor='w', padx=22, pady=(0, 10))
 
         for name, icon_name in MENU:
             row = tk.Frame(self, bg=SIDEBAR, height=42, cursor='hand2')
@@ -49,9 +54,11 @@ class Sidebar(tk.Frame):
         bottom.pack(fill='x', padx=12, pady=(0, 16))
         row = tk.Frame(bottom, bg=CARD)
         row.pack(anchor='w')
-        Icon(row, 'check', size=14, color=GREEN, bg=CARD).pack(side='left', pady=1)
+        Icon(row, 'check', size=14, color=GREEN,
+             bg=CARD).pack(side='left', pady=1)
         lbl(row, '  Modo visual', 10, GREEN, True, bg=CARD).pack(side='left')
-        lbl(bottom, 'Sem controllers ou banco', 9, MUTED, bg=CARD).pack(anchor='w', pady=(5, 0))
+        lbl(bottom, 'Sem controllers ou banco', 9,
+            MUTED, bg=CARD).pack(anchor='w', pady=(5, 0))
         self.active = None
         self.select('Dashboard')
 
@@ -76,4 +83,5 @@ class Sidebar(tk.Frame):
             row.configure(bg=bg)
             ind.configure(bg=GREEN if selected else bg)
             ico.recolor(GREEN if selected else MUTED, bg)
-            txt.configure(bg=bg, fg=fg, font=font(11, 'bold' if selected else 'normal'))
+            txt.configure(bg=bg, fg=fg, font=font(
+                11, 'bold' if selected else 'normal'))

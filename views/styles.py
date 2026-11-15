@@ -16,6 +16,7 @@ DIM = '#64748B'
 BLUE = '#60A5FA'
 AMBER = '#FBBF24'
 PURPLE = '#A78BFA'
+# Inter é preferida quando instalada; o Tk utiliza fallback automaticamente.
 FONT = 'Inter'
 
 def font(size=13, weight='normal'):

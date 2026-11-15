@@ -24,87 +24,45 @@ def card(parent, pad=18, bg=CARD):
     return outer, inner
 
 
-class Icon(tk.Canvas):
+class Icon(tk.Label):
+    """Ícone antialiasado com assets PNG e recoloração em memória.
+
+    A imagem é renderizada no tamanho final com Lanczos, em vez de
+    desenhar linhas fracionárias num Canvas minúsculo.
+    """
+    _cache = {}
+
     def __init__(self, master, name='dot', size=18, color=MUTED, bg=None):
-        bg = bg or master.cget('bg')
-        super().__init__(master, width=size, height=size, bg=bg, highlightthickness=0)
+        from pathlib import Path
         self.name = name
-        self.size = size
+        self.size = int(size)
         self.color = color
-        self.bg_color = bg
-        self.draw()
+        self.bg_color = bg or master.cget('bg')
+        super().__init__(master, bg=self.bg_color, borderwidth=0,
+                         highlightthickness=0, padx=0, pady=0)
+        self.recolor(color, self.bg_color)
 
     def recolor(self, color=None, bg=None):
+        from pathlib import Path
+        from PIL import Image, ImageTk, ImageColor
         if color is not None:
             self.color = color
         if bg is not None:
             self.bg_color = bg
-            self.configure(bg=bg)
-        self.draw()
-
-    def draw(self):
-        self.delete('all')
-        s = self.size
-        c = self.color
-        p = max(2, s // 10)
-        m = max(3, s // 5)
-        name = self.name
-        if name == 'brand':
-            self.create_rectangle(m, m, s - m, s - m, outline=c, width=2)
-            self.create_rectangle(m + 4, m + 4, s - m - 4, s - m - 4, outline=c, width=1)
-        elif name == 'dashboard':
-            w = (s - 2*m - p) / 2
-            h = (s - 2*m - p) / 2
-            for r in range(2):
-                for col in range(2):
-                    x1 = m + col * (w + p)
-                    y1 = m + r * (h + p)
-                    self.create_rectangle(x1, y1, x1 + w, y1 + h, outline=c, width=2)
-        elif name == 'income':
-            self.create_line(s*0.25, s*0.75, s*0.72, s*0.28, fill=c, width=2)
-            self.create_line(s*0.55, s*0.28, s*0.72, s*0.28, fill=c, width=2)
-            self.create_line(s*0.72, s*0.28, s*0.72, s*0.45, fill=c, width=2)
-        elif name == 'category':
-            pts = [s*0.5, m, s-m, s*0.5, s*0.5, s-m, m, s*0.5]
-            self.create_polygon(pts, outline=c, fill='', width=2)
-            self.create_oval(s*0.45, s*0.45, s*0.55, s*0.55, outline=c, fill=c)
-        elif name == 'expense':
-            self.create_line(s*0.25, s*0.25, s*0.72, s*0.72, fill=c, width=2)
-            self.create_line(s*0.55, s*0.72, s*0.72, s*0.72, fill=c, width=2)
-            self.create_line(s*0.72, s*0.55, s*0.72, s*0.72, fill=c, width=2)
-        elif name == 'goal':
-            self.create_oval(m, m, s-m, s-m, outline=c, width=2)
-            self.create_oval(s*0.35, s*0.35, s*0.65, s*0.65, outline=c, width=2)
-            self.create_oval(s*0.47, s*0.47, s*0.53, s*0.53, outline=c, fill=c)
-        elif name == 'rules':
-            for y in (s*0.3, s*0.5, s*0.7):
-                self.create_line(m, y, s-m, y, fill=c, width=2)
-            for x in (s*0.35, s*0.65):
-                self.create_line(x, s*0.22, x, s*0.78, fill=c, width=2)
-        elif name == 'contributions':
-            self.create_oval(m, m, s-m, s-m, outline=c, width=2)
-            self.create_line(s*0.5, s*0.27, s*0.5, s*0.73, fill=c, width=2)
-            self.create_line(s*0.27, s*0.5, s*0.73, s*0.5, fill=c, width=2)
-        elif name == 'plus':
-            self.create_line(s*0.5, s*0.2, s*0.5, s*0.8, fill=c, width=2)
-            self.create_line(s*0.2, s*0.5, s*0.8, s*0.5, fill=c, width=2)
-        elif name == 'wallet':
-            self.create_rectangle(m, s*0.28, s-m, s*0.78, outline=c, width=2)
-            self.create_rectangle(s*0.56, s*0.4, s-m+1, s*0.63, outline=c, width=2)
-            self.create_oval(s*0.66, s*0.49, s*0.71, s*0.54, outline=c, fill=c)
-        elif name == 'alert':
-            self.create_oval(s*0.16, s*0.16, s*0.84, s*0.84, outline=c, width=2)
-            self.create_line(s*0.5, s*0.34, s*0.5, s*0.57, fill=c, width=2)
-            self.create_oval(s*0.47, s*0.67, s*0.53, s*0.73, outline=c, fill=c)
-        elif name == 'check':
-            self.create_oval(s*0.16, s*0.16, s*0.84, s*0.84, outline=c, width=2)
-            self.create_line(s*0.32, s*0.52, s*0.45, s*0.65, s*0.7, s*0.38, fill=c, width=2, smooth=True)
-        elif name == 'down':
-            self.create_line(s*0.22, s*0.32, s*0.5, s*0.68, s*0.78, s*0.32, fill=c, width=2, smooth=True)
-        elif name == 'up':
-            self.create_line(s*0.22, s*0.68, s*0.5, s*0.32, s*0.78, s*0.68, fill=c, width=2, smooth=True)
-        else:
-            self.create_oval(s*0.35, s*0.35, s*0.65, s*0.65, outline=c, fill=c)
+        key = (self.name, self.size, self.color)
+        image = self._cache.get(key)
+        if image is None:
+            file = Path(__file__).resolve().parent / 'assets' / 'icons' / (self.name + '.png')
+            if not file.exists():
+                file = file.with_name('dot.png')
+            with Image.open(file) as src:
+                rgba = src.convert('RGBA').resize((self.size, self.size), Image.Resampling.LANCZOS)
+            alpha = rgba.getchannel('A')
+            image = Image.new('RGBA', rgba.size, ImageColor.getrgb(self.color) + (0,))
+            image.putalpha(alpha)
+            self._cache[key] = image
+        self._photo = ImageTk.PhotoImage(image, master=self)
+        self.configure(image=self._photo, bg=self.bg_color)
 
 
 def icon_button(parent, text, command=None, primary=True, small=False, bg=None, icon_name=None):

@@ -10,10 +10,8 @@ from .pages import PAGES, form_page
 class MainView(tk.Tk):
     def __init__(self):
         super().__init__()
-        try:
-            self.tk.call('tk', 'scaling', 1.0)
-        except Exception:
-            pass
+        # Preserva a escala real de DPI calculada pelo Tk no monitor.
+        # Não usar tk scaling=1.0: isso reduz fontes e provoca blur no Windows.
         self.title('MeuBolso • Planejamento financeiro')
         self.geometry('1180x740')
         self.minsize(1024, 680)
