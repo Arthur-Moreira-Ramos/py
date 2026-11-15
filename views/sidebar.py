@@ -26,8 +26,7 @@ class Sidebar(tk.Frame):
         Icon(brand, 'wallet', 20, GREEN, SIDEBAR).pack(
             side='left', pady=1, padx=(0, 2))
         lbl(brand, ' MeuBolso', 17, WHITE, True).pack(side='left')
-        lbl(self, 'SEU DINHEIRO, SEM COMPLICAÇÃO', 8, DIM, True,
-            bg=SIDEBAR).pack(anchor='w', padx=22, pady=(0, 28))
+
         tk.Frame(self, bg=BORDER, height=1).pack(
             fill='x', padx=18, pady=(0, 18))
         lbl(self, 'MENU PRINCIPAL', 8, DIM, True, bg=SIDEBAR).pack(
@@ -49,16 +48,6 @@ class Sidebar(tk.Frame):
                 item.bind('<Enter>', lambda _, n=name: self.hover(n, True))
                 item.bind('<Leave>', lambda _, n=name: self.hover(n, False))
 
-        tk.Frame(self, bg=SIDEBAR).pack(expand=True, fill='both')
-        bottom = tk.Frame(self, bg=CARD, padx=14, pady=12)
-        bottom.pack(fill='x', padx=12, pady=(0, 16))
-        row = tk.Frame(bottom, bg=CARD)
-        row.pack(anchor='w')
-        Icon(row, 'check', size=14, color=GREEN,
-             bg=CARD).pack(side='left', pady=1)
-        lbl(row, '  Modo visual', 10, GREEN, True, bg=CARD).pack(side='left')
-        lbl(bottom, 'Sem controllers ou banco', 9,
-            MUTED, bg=CARD).pack(anchor='w', pady=(5, 0))
         self.active = None
         self.select('Dashboard')
 

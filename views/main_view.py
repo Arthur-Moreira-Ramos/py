@@ -1,10 +1,12 @@
 """Shell da aplicação: transições e navegação; sem controllers ou banco."""
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, simpledialog, messagebox
 from .styles import *
 from .sidebar import Sidebar
 from .components import ScrollPage, lbl, Icon
 from .pages import PAGES, form_page
+from . import pages
+from controllers.financeiro import FinanceiroController
 
 
 class MainView(tk.Tk):
@@ -17,6 +19,11 @@ class MainView(tk.Tk):
         self.minsize(1024, 680)
         self.configure(bg=BG)
         self._init_styles()
+        self.financeiro = self._select_user()
+        if self.financeiro is None:
+            self.destroy()
+            return
+        pages.controller = self.financeiro
         self.sidebar = Sidebar(self, self.navigate)
         self.sidebar.pack(side='left', fill='y')
         self.shell = tk.Frame(self, bg=BG)
@@ -26,6 +33,38 @@ class MainView(tk.Tk):
         self.stage.pack(fill='both', expand=True)
         self.current = None
         self.after(75, lambda: self.navigate('Dashboard'))
+
+    def _select_user(self):
+        try:
+            users = FinanceiroController.usuarios()
+            if not users:
+                messagebox.showinfo('Primeiro acesso', 'Nenhum usuário cadastrado. Crie uma conta local para começar.')
+                name = simpledialog.askstring('Novo usuário', 'Nome:', parent=self)
+                if not name:
+                    return None
+                email = simpledialog.askstring('Novo usuário', 'E-mail:', parent=self)
+                if not email:
+                    return None
+                user_id = FinanceiroController.criar_usuario(name, email)
+                self.account_label = name
+            elif len(users) == 1:
+                user_id = users[0]['id']
+                self.account_label = users[0]['nome']
+            else:
+                choices = '\n'.join(f"#{u['id']} — {u['nome']} ({u['email']})" for u in users)
+                user_id = simpledialog.askinteger('Selecionar usuário',
+                    'Digite o ID do usuário:\n' + choices, parent=self)
+                if user_id is None:
+                    return None
+                matched = next((u for u in users if u['id'] == user_id), None)
+                if not matched:
+                    raise ValueError('Identificador de usuário inválido.')
+                self.account_label = matched['nome']
+            return FinanceiroController(user_id)
+        except Exception as exc:
+            messagebox.showerror('Erro de conexão ou configuração',
+                f'{exc}\n\nVerifique o banco, schema.sql e as variáveis DB_*.', parent=self)
+            return None
 
     def _init_styles(self):
         theme = ttk.Style(self)
@@ -66,7 +105,7 @@ class MainView(tk.Tk):
         avatar = tk.Frame(top, bg=CARD, padx=12, pady=8)
         avatar.pack(side='right', pady=12)
         Icon(avatar, 'check', 14, GREEN, CARD).pack(side='left', padx=(0, 8))
-        lbl(avatar, 'Conta demonstrativa', 10, TEXT, True, bg=CARD).pack(side='left')
+        lbl(avatar, self.account_label, 10, TEXT, True, bg=CARD).pack(side='left')
         tk.Frame(self.shell, bg=BORDER, height=1).pack(fill='x')
 
     def navigate(self, name):
