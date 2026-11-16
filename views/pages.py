@@ -166,7 +166,9 @@ def table_rows(root, items, specs, open_form, table_name, navigate):
             (table_name, r)), primary=False, small=True).pack(side='right', padx=(8, 0))
 
         def delete(r=item):
-            if not messagebox.askyesno('Confirmar exclusão', f"Excluir registro #{r['id']}? Esta ação não pode ser desfeita."):
+            aviso = ("\n\nATENÇÃO: excluir este objetivo também apagará seus aportes e sua regra de distribuição."
+                     if table_name == 'Objetivos' else '')
+            if not messagebox.askyesno('Confirmar exclusão', f"Excluir registro #{r['id']}? Esta ação não pode ser desfeita.{aviso}"):
                 return
             try:
                 controller.excluir(CONFIG[table_name][0], r['id'])

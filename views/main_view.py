@@ -117,7 +117,9 @@ class MainView(tk.Tk):
         self._render(lambda body: PAGES[name](body, self.navigate, self.open_form))
 
     def open_form(self, title):
-        self.breadcrumb.configure(text='MEUBOLSO   /   FORMULÁRIOS   /   ' + title.upper())
+        section = title[0] if isinstance(title, tuple) else title
+        action = 'EDITAR' if isinstance(title, tuple) else 'CADASTRAR'
+        self.breadcrumb.configure(text=f'MEUBOLSO   /   FORMULÁRIOS   /   {action}   /   {section.upper()}')
         self._render(lambda body: form_page(body, title, self.navigate, self.open_form))
 
     def _render(self, renderer):

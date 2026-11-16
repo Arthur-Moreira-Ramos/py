@@ -165,6 +165,10 @@ class FinanceiroController:
             raise ValueError('Recurso inválido.')
         with sessao() as cur:
             self._ownership(cur, tabela, int(item_id))
+            if tabela == 'objetivo_financeiro':
+                # Exclusão explícita das dependências do objetivo, na mesma transação.
+                cur.execute('DELETE FROM aporte_objetivo WHERE objetivo_id=%s', (int(item_id),))
+                cur.execute('DELETE FROM regra_distribuicao WHERE objetivo_id=%s', (int(item_id),))
             cur.execute(sql.SQL('DELETE FROM {} WHERE id=%s').format(sql.Identifier(tabela)), (int(item_id),))
 
     def resumo(self):
