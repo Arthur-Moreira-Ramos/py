@@ -15,14 +15,18 @@ class MainView(tk.Tk):
         # Preserva a escala real de DPI calculada pelo Tk no monitor.
         # Não usar tk scaling=1.0: isso reduz fontes e provoca blur no Windows.
         self.title('MeuBolso • Planejamento financeiro')
-        self.geometry('1180x740')
+        self.geometry('1180x740')  # Dimensão de reserva para sistemas sem maximização.
         self.minsize(1024, 680)
         self.configure(bg=BG)
+        self._maximizar_janela()
         self._init_styles()
         self.financeiro = self._select_user()
         if self.financeiro is None:
             self.destroy()
             return
+        # Diálogos modais podem modificar o estado da janela principal no Windows.
+        # Recupera a janela antes de construir a interface e novamente no próximo ciclo.
+        self._restaurar_apos_selecao()
         pages.controller = self.financeiro
         self.sidebar = Sidebar(self, self.navigate)
         self.sidebar.pack(side='left', fill='y')
@@ -33,6 +37,33 @@ class MainView(tk.Tk):
         self.stage.pack(fill='both', expand=True)
         self.current = None
         self.after(75, lambda: self.navigate('Dashboard'))
+
+    def _maximizar_janela(self):
+        """Maximiza sem entrar no modo fullscreen (mantém barra do Windows)."""
+        try:
+            self.state('zoomed')  # Windows
+        except tk.TclError:
+            try:
+                self.attributes('-zoomed', True)  # Alguns gerenciadores Linux
+            except tk.TclError:
+                self.geometry(f'{self.winfo_screenwidth()}x{self.winfo_screenheight()}+0+0')
+
+    def _restaurar_apos_selecao(self):
+        """Evita que o diálogo de escolha deixe a aplicação minimizada."""
+        self.deiconify()
+        self._maximizar_janela()
+        self.lift()
+        self.after_idle(self._recuperar_foco_inicial)
+        self.after(180, self._recuperar_foco_inicial)
+
+    def _recuperar_foco_inicial(self):
+        if not self.winfo_exists():
+            return
+        if self.state() == 'iconic' or self.state() == 'withdrawn':
+            self.deiconify()
+        self._maximizar_janela()
+        self.lift()
+        self.focus_set()
 
     def _select_user(self):
         try:

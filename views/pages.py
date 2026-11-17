@@ -362,6 +362,124 @@ def table_rows(root, items, specs, open_form, table_name, navigate):
     redraw()
 
 
+
+def rules_cards(root, records, navigate, open_form):
+    """Cards interativos de regras, mantendo os controllers de edição/exclusão."""
+    import customtkinter as ctk
+    import unicodedata
+
+    ctk.set_appearance_mode('dark')
+    suggestions = {int(r['objetivo_id']): r for r in controller.sugestoes()
+                   if r.get('objetivo_id') is not None}
+    goals = {int(g['id']): g['descricao'] for g in controller.metas()}
+
+    outer, inner = card(root, 16)
+    outer.pack(fill='x', pady=(0, 18))
+    header = ctk.CTkFrame(inner, fg_color='transparent')
+    header.pack(fill='x', pady=(0, 12))
+    ctk.CTkLabel(header, text='Regras cadastradas', text_color=WHITE,
+                 font=(FONT, 14, 'bold')).pack(side='left')
+    total = sum((Decimal(str(record['porcentagem'])) for record in records), Decimal('0'))
+    ctk.CTkLabel(header, text=f'{len(records)} regra(s)  ·  {str(total).replace(".", ",")}% distribuído',
+                 text_color=MUTED, font=(FONT, 10)).pack(side='right')
+
+    toolbar = ctk.CTkFrame(inner, fg_color='transparent')
+    toolbar.pack(fill='x', pady=(0, 12))
+    search = ctk.StringVar(value='')
+    ctk.CTkEntry(toolbar, textvariable=search, height=38, corner_radius=8,
+                 placeholder_text='Pesquisar objetivo...', fg_color=BG,
+                 border_color=BORDER, text_color=TEXT,
+                 placeholder_text_color=MUTED, font=(FONT, 12)).pack(
+                     side='left', fill='x', expand=True, padx=(0, 10))
+    order = ctk.StringVar(value='Maior porcentagem')
+    ctk.CTkOptionMenu(toolbar, variable=order, height=38, width=174,
+                      values=['Maior porcentagem', 'Menor porcentagem', 'Nome (A–Z)', 'Nome (Z–A)'],
+                      fg_color=BORDER, button_color='#475569',
+                      button_hover_color='#52647A', dropdown_fg_color=CARD,
+                      dropdown_hover_color=GREEN_DARK, text_color=WHITE,
+                      dropdown_text_color=WHITE, font=(FONT, 11),
+                      dropdown_font=(FONT, 11)).pack(side='right')
+    results = ctk.CTkFrame(inner, fg_color='transparent')
+    results.pack(fill='x')
+    empty_label = ctk.CTkLabel(inner, text='', text_color=MUTED, font=(FONT, 10))
+    empty_label.pack(anchor='w', pady=(8, 0))
+
+    def name_of(record):
+        goal_id = int(record['objetivo_id'])
+        suggestion = suggestions.get(goal_id) or {}
+        return suggestion.get('descricao') or goals.get(goal_id, 'Objetivo não encontrado')
+
+    def normalized(value):
+        return ''.join(ch for ch in unicodedata.normalize('NFKD', str(value).casefold())
+                       if not unicodedata.combining(ch))
+
+    def redraw(*_):
+        for widget in results.winfo_children():
+            widget.destroy()
+        query = normalized(search.get().strip())
+        filtered = [record for record in records if query in normalized(name_of(record))
+                    or query in str(record['id'])]
+        sort_mode = order.get()
+        if sort_mode == 'Maior porcentagem':
+            filtered.sort(key=lambda item: Decimal(str(item['porcentagem'])), reverse=True)
+        elif sort_mode == 'Menor porcentagem':
+            filtered.sort(key=lambda item: Decimal(str(item['porcentagem'])))
+        else:
+            filtered.sort(key=lambda item: normalized(name_of(item)),
+                          reverse=sort_mode == 'Nome (Z–A)')
+
+        empty_label.configure(text=(f'{len(filtered)} de {len(records)} regra(s) exibida(s)'
+                                   if filtered else 'Nenhuma regra encontrada.'))
+        for record in filtered:
+            goal_id = int(record['objetivo_id'])
+            suggestion = suggestions.get(goal_id)
+            percentage = Decimal(str(record['porcentagem']))
+            percent_display = f'{percentage:.2f}'.replace('.', ',') + '%'
+            block = ctk.CTkFrame(results, fg_color=BG, border_width=1,
+                                 border_color=BORDER, corner_radius=9)
+            block.pack(fill='x', pady=(0, 8))
+            block.grid_columnconfigure(0, weight=1)
+
+            info = ctk.CTkFrame(block, fg_color='transparent')
+            info.grid(row=0, column=0, sticky='ew', padx=(15, 12), pady=(12, 12))
+            ctk.CTkLabel(info, text=name_of(record), text_color=WHITE,
+                         font=(FONT, 12, 'bold'), anchor='w').pack(anchor='w')
+            ctk.CTkLabel(info, text=(f'Valor sugerido: {money(suggestion["sugerido"])}'
+                                          if suggestion is not None else 'Valor sugerido indisponível'),
+                         text_color=MUTED, font=(FONT, 10), anchor='w').pack(
+                             anchor='w', pady=(3, 9))
+            bar = ctk.CTkProgressBar(info, height=8, corner_radius=4,
+                                     fg_color=BORDER, progress_color=GREEN)
+            bar.pack(fill='x')
+            bar.set(max(0.0, min(float(percentage) / 100, 1.0)))
+
+            pct = ctk.CTkFrame(block, fg_color='transparent')
+            pct.grid(row=0, column=1, padx=(4, 20), pady=12, sticky='e')
+            ctk.CTkLabel(pct, text=percent_display, text_color=GREEN,
+                         font=(FONT, 15, 'bold')).pack(anchor='e')
+            ctk.CTkLabel(pct, text='do saldo', text_color=MUTED,
+                         font=(FONT, 10)).pack(anchor='e')
+
+            actions = ctk.CTkFrame(block, fg_color='transparent')
+            actions.grid(row=0, column=2, padx=(0, 14), pady=12, sticky='e')
+            ctk.CTkButton(actions, text='Editar', width=70, height=34,
+                          fg_color=BORDER, hover_color='#475569', corner_radius=7,
+                          font=(FONT, 11, 'bold'),
+                          command=lambda r=record: open_form(('Regras', r))).pack(
+                              side='left', padx=(0, 8))
+            ctk.CTkButton(actions, text='Excluir', width=70, height=34,
+                          fg_color='transparent', border_width=1,
+                          border_color='#9B3946', hover_color=RED_SOFT,
+                          text_color='#FDA4AF', corner_radius=7,
+                          font=(FONT, 11, 'bold'),
+                          command=lambda r=record: delete_record('Regras', r, navigate)).pack(
+                              side='left')
+
+    search.trace_add('write', redraw)
+    order.trace_add('write', redraw)
+    redraw()
+
+
 def delete_record(section, record, navigate):
     aviso = ("\n\nATENÇÃO: excluir este objetivo também apagará seus aportes e sua regra de distribuição."
              if section == 'Objetivos' else '')
@@ -396,26 +514,7 @@ def listing(section):
         elif section == 'Regras':
             note(root, 'Distribuição do saldo',
                  'As porcentagens são sugestões. Não geram aportes automaticamente; a soma das regras não pode exceder 100%.')
-            records = controller.listar(table)
-            suggestions = {int(r['objetivo_id']): r for r in controller.sugestoes() if r.get('objetivo_id') is not None}
-            goals = {int(g['id']): g['descricao'] for g in controller.metas()}
-            if not records:
-                c, inner = card(root)
-                c.pack(fill='x', pady=(0, 8))
-                lbl(inner, 'Nenhuma regra cadastrada.', 11, MUTED, bg=CARD).pack(anchor='w')
-            for record in records:
-                c, inner = card(root, 12)
-                c.pack(fill='x', pady=(0, 7))
-                record_actions(inner, section, record, navigate, open_form)
-                info = tk.Frame(inner, bg=CARD)
-                info.pack(side='left', fill='x', expand=True)
-                suggestion = suggestions.get(int(record['objetivo_id']))
-                description = (suggestion or {}).get('descricao') or goals.get(int(record['objetivo_id']), 'Objetivo não encontrado')
-                percentage = record['porcentagem']
-                text = f"{description}  —  {percentage}%"
-                if suggestion is not None:
-                    text += f"  ·  Valor sugerido: {money(suggestion['sugerido'])}"
-                lbl(info, text, 11, TEXT, bg=CARD, wraplength=850).pack(anchor='w', pady=4)
+            rules_cards(root, controller.listar(table), navigate, open_form)
             return
         elif section == 'Objetivos':
             goals = controller.metas()
