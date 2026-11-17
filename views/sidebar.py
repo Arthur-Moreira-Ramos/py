@@ -4,12 +4,12 @@ from .components import lbl, Icon
 
 MENU = [
     ('Dashboard', 'dashboard'),
-    ('Rendas', 'income'),
     ('Categorias', 'category'),
+    ('Rendas', 'income'),
     ('Despesas', 'expense'),
     ('Objetivos', 'goal'),
     ('Regras', 'rules'),
-    ('Aportes', 'contributions'),
+    # ('Aportes', 'contributions'),
 ]
 
 

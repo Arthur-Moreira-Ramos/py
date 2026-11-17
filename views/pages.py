@@ -76,8 +76,7 @@ def fmt(v):
 
 def dashboard(root, navigate, open_form):
     d = controller.resumo()
-    section_header(root, 'Painel geral', 'Seu dinheiro, suas escolhas. Tudo em um só lugar.',
-                   'Nova movimentação', lambda: open_form('Nova movimentação'))
+    section_header(root, 'Painel geral', 'Seu dinheiro, suas escolhas. Tudo em um só lugar.')
     note(root, 'Dados conectados ao PostgreSQL',
          'Renda é uma projeção mensal (diária × 30; semanal × 52/12). Despesas e aportes usam registros de 1º até hoje no mês atual.')
     info = [('Saldo projetado', d['saldo'], 'Após despesas e aportes', WHITE, 'wallet'),
@@ -148,36 +147,241 @@ def reference_options(kind):
 
 
 def table_rows(root, items, specs, open_form, table_name, navigate):
-    outer, inner = card(root)
-    outer.pack(fill='x', pady=(0, 18))
-    panel_title(inner, 'Registros cadastrados', f'{len(items)} encontrado(s)')
-    if not items:
-        lbl(inner, 'Nenhum registro cadastrado.', 11,
-            MUTED, bg=CARD).pack(anchor='w', pady=12)
-        return
-    shown = [s for s in specs if s[0] not in (
-        'usuario_id', 'categoria_id', 'objetivo_id')]
-    for item in items:
-        row = tk.Frame(inner, bg=CARD, pady=10)
-        row.pack(fill='x')
-        lbl(row, f"#{item['id']}   " + '  |  '.join(f'{label}: {fmt(item.get(key))}' for key, label,
-            _ in shown), 10, TEXT, bg=CARD, wraplength=800).pack(side='left', fill='x', expand=True)
-        ActionButton(row, 'Editar', lambda r=item: open_form(
-            (table_name, r)), primary=False, small=True).pack(side='right', padx=(8, 0))
+    """Listagem interativa CustomTkinter: busca, filtros, ordem e paginação.
 
-        def delete(r=item):
-            aviso = ("\n\nATENÇÃO: excluir este objetivo também apagará seus aportes e sua regra de distribuição."
-                     if table_name == 'Objetivos' else '')
-            if not messagebox.askyesno('Confirmar exclusão', f"Excluir registro #{r['id']}? Esta ação não pode ser desfeita.{aviso}"):
-                return
-            try:
-                controller.excluir(CONFIG[table_name][0], r['id'])
-                navigate(table_name)
-            except Exception as e:
-                messagebox.showerror('Não foi possível excluir', str(e))
-        ActionButton(row, 'Excluir', delete, primary=False,
-                     small=True).pack(side='right')
-        tk.Frame(inner, bg=BORDER, height=1).pack(fill='x')
+    Nenhuma ação altera o banco diretamente; edição/exclusão usam os
+    formulários e controllers originais do projeto.
+    """
+    import customtkinter as ctk
+
+    ctk.set_appearance_mode('dark')
+    outer, inner = card(root, 16)
+    outer.pack(fill='x', pady=(0, 18))
+
+    title_bar = tk.Frame(inner, bg=CARD)
+    title_bar.pack(fill='x', pady=(0, 15))
+    lbl(title_bar, 'Registros cadastrados', 14, WHITE, True, bg=CARD).pack(side='left')
+    count_label = lbl(title_bar, '', 9, MUTED, bg=CARD)
+    count_label.pack(side='right')
+
+    toolbar = ctk.CTkFrame(inner, fg_color='transparent', corner_radius=0)
+    toolbar.pack(fill='x', pady=(0, 14))
+    search = ctk.StringVar(value='')
+    search_entry = ctk.CTkEntry(
+        toolbar, textvariable=search, placeholder_text='Pesquisar registros...',
+        fg_color=BG, border_color=BORDER, text_color=TEXT,
+        placeholder_text_color=MUTED, height=38, corner_radius=8,
+        font=(FONT, 12))
+    search_entry.pack(side='left', fill='x', expand=True, padx=(0, 10))
+
+    order_values = ['Mais recentes', 'Mais antigos', 'Nome (A–Z)', 'Nome (Z–A)']
+    if table_name in ('Rendas', 'Despesas', 'Aportes'):
+        order_values.extend(['Maior valor', 'Menor valor'])
+    ordering = ctk.StringVar(value='Mais recentes')
+    order_menu = ctk.CTkOptionMenu(
+        toolbar, values=order_values, variable=ordering, width=160, height=38,
+        fg_color=BORDER, button_color='#475569', button_hover_color='#52647A',
+        dropdown_fg_color=CARD, dropdown_hover_color=GREEN_DARK,
+        text_color=WHITE, dropdown_text_color=WHITE, corner_radius=8,
+        font=(FONT, 11), dropdown_font=(FONT, 11))
+    order_menu.pack(side='right')
+
+    filters = {'Rendas': ['Todas', 'Ativas', 'Inativas'],
+               'Despesas': ['Todas', 'Pagas', 'Pendentes', 'Fixas', 'Variáveis']}
+    selection = ctk.StringVar(value='Todas')
+    if table_name in filters:
+        filter_menu = ctk.CTkOptionMenu(
+            toolbar, values=filters[table_name], variable=selection,
+            width=130, height=38, fg_color=BORDER, button_color='#475569',
+            button_hover_color='#52647A', dropdown_fg_color=CARD,
+            dropdown_hover_color=GREEN_DARK, text_color=WHITE,
+            dropdown_text_color=WHITE, corner_radius=8,
+            font=(FONT, 11), dropdown_font=(FONT, 11))
+        filter_menu.pack(side='right', padx=(0, 10))
+
+    results = ctk.CTkFrame(inner, fg_color='transparent', corner_radius=0)
+    results.pack(fill='x')
+    footer = ctk.CTkFrame(inner, fg_color='transparent', corner_radius=0)
+    footer.pack(fill='x', pady=(14, 0))
+
+    categories = {}
+    goals = {}
+    if table_name == 'Despesas':
+        categories = {int(c['id']): c['nome'] for c in controller.listar('categoria_despesa')}
+    if table_name == 'Aportes':
+        goals = {int(g['id']): g['descricao'] for g in controller.metas()}
+
+    page = [0]
+    page_size = 8
+
+    def label(parent, text, size=11, color=TEXT, bold=False, **kwargs):
+        return ctk.CTkLabel(
+            parent, text=str(text), text_color=color, font=(FONT, size, 'bold' if bold else 'normal'),
+            anchor='w', **kwargs)
+
+    def badge(parent, text, color=GREEN, background=GREEN_SOFT):
+        return ctk.CTkLabel(parent, text=text, text_color=color,
+                            fg_color=background, corner_radius=6, height=25,
+                            font=(FONT, 10, 'bold'), padx=10)
+
+    def name_of(record):
+        return str(record.get('nome') or record.get('descricao') or
+                   goals.get(record.get('objetivo_id'), 'Registro'))
+
+    def item_data(record):
+        if table_name == 'Rendas':
+            active = bool(record.get('ativa'))
+            cadence = {'DIARIA': 'Diária', 'SEMANAL': 'Semanal', 'MENSAL': 'Mensal'}
+            return (name_of(record), f"{cadence.get(record.get('periodicidade'), 'Não definida')}  ·  Fonte recorrente",
+                    money(record.get('valor') or 0), 'Ativa' if active else 'Inativa',
+                    GREEN if active else MUTED, GREEN_SOFT if active else BORDER)
+        if table_name == 'Categorias':
+            return (name_of(record), str(record.get('descricao') or 'Sem descrição'),
+                    '', 'Categoria', BLUE, BG)
+        if table_name == 'Despesas':
+            paid = bool(record.get('pago'))
+            category = categories.get(record.get('categoria_id'), 'Sem categoria')
+            kind = 'Fixa' if record.get('tipo') == 'FIXA' else 'Variável'
+            return (name_of(record), f"{category}  ·  {kind}  ·  {fmt(record.get('data_despesa'))}",
+                    money(record.get('valor') or 0), 'Paga' if paid else 'Pendente',
+                    GREEN if paid else AMBER, GREEN_SOFT if paid else '#45391F')
+        if table_name == 'Aportes':
+            return (goals.get(record.get('objetivo_id'), 'Objetivo não encontrado'),
+                    f"Aporte em {fmt(record.get('data_aporte'))}",
+                    money(record.get('valor') or 0), 'Aporte', BLUE, BG)
+        return (name_of(record), '', '', 'Registro', MUTED, BG)
+
+    def matching():
+        import unicodedata
+        def normalize(value):
+            return ''.join(char for char in unicodedata.normalize('NFKD', str(value).lower())
+                           if not unicodedata.combining(char))
+        query = normalize(search.get().strip())
+        filt = selection.get()
+        found = []
+        for record in items:
+            main, subtitle, amount, status, *_ = item_data(record)
+            haystack = normalize(' '.join([str(record['id']), main, subtitle, amount, status]))
+            if query and query not in haystack:
+                continue
+            if table_name == 'Rendas' and filt != 'Todas':
+                if bool(record.get('ativa')) != (filt == 'Ativas'):
+                    continue
+            if table_name == 'Despesas' and filt != 'Todas':
+                if filt in ('Pagas', 'Pendentes') and bool(record.get('pago')) != (filt == 'Pagas'):
+                    continue
+                if filt in ('Fixas', 'Variáveis') and record.get('tipo') != ('FIXA' if filt == 'Fixas' else 'VARIAVEL'):
+                    continue
+            found.append(record)
+        order = ordering.get()
+        if order == 'Mais recentes':
+            found.sort(key=lambda r: int(r['id']), reverse=True)
+        elif order == 'Mais antigos':
+            found.sort(key=lambda r: int(r['id']))
+        elif order in ('Nome (A–Z)', 'Nome (Z–A)'):
+            found.sort(key=lambda r: normalize(name_of(r)), reverse=order == 'Nome (Z–A)')
+        elif order in ('Maior valor', 'Menor valor'):
+            found.sort(key=lambda r: r.get('valor') or 0, reverse=order == 'Maior valor')
+        return found
+
+    def redraw(*_):
+        for child in results.winfo_children():
+            child.destroy()
+        for child in footer.winfo_children():
+            child.destroy()
+        filtered = matching()
+        total = len(filtered)
+        maximum_page = max(0, (total-1)//page_size)
+        page[0] = min(page[0], maximum_page)
+        count_label.configure(text=f'{total} de {len(items)} registro(s)')
+        if not filtered:
+            empty = ctk.CTkFrame(results, fg_color=BG, corner_radius=8, height=100)
+            empty.pack(fill='x')
+            label(empty, 'Nenhum registro encontrado', 12, WHITE, True).pack(anchor='center', pady=(23, 2))
+            label(empty, 'Altere a pesquisa ou os filtros para visualizar outros registros.', 10, MUTED).pack(anchor='center')
+            return
+
+        for record in filtered[page[0]*page_size:(page[0]+1)*page_size]:
+            title, detail, amount, status, status_color, status_bg = item_data(record)
+            block = ctk.CTkFrame(results, fg_color=BG, corner_radius=9,
+                                 border_width=1, border_color=BORDER)
+            block.pack(fill='x', pady=(0, 8))
+            block.grid_columnconfigure(0, weight=1)
+            block.grid_columnconfigure(1, weight=0)
+            block.grid_columnconfigure(2, weight=0)
+
+            info = ctk.CTkFrame(block, fg_color='transparent')
+            info.grid(row=0, column=0, sticky='ew', padx=(14, 8), pady=12)
+            name_line = ctk.CTkFrame(info, fg_color='transparent')
+            name_line.pack(fill='x')
+            label(name_line, title, 12, WHITE, True, wraplength=520).pack(side='left')
+            label(name_line, f"  #{record['id']}", 9, DIM).pack(side='left', padx=(4, 0))
+            if detail:
+                label(info, detail, 10, MUTED, wraplength=610).pack(anchor='w', pady=(4, 0))
+
+            metrics = ctk.CTkFrame(block, fg_color='transparent')
+            metrics.grid(row=0, column=1, sticky='e', padx=(0, 16), pady=10)
+            if amount:
+                label(metrics, amount, 12, WHITE, True).pack(anchor='e', pady=(0, 5))
+            badge(metrics, status, status_color, status_bg).pack(anchor='e')
+
+            actions = ctk.CTkFrame(block, fg_color='transparent')
+            actions.grid(row=0, column=2, sticky='e', padx=(0, 14), pady=10)
+            ctk.CTkButton(actions, text='Editar', width=69, height=33,
+                          fg_color=BORDER, hover_color='#475569', corner_radius=7,
+                          font=(FONT, 11, 'bold'), command=lambda r=record: open_form((table_name, r))).pack(side='left', padx=(0, 7))
+            ctk.CTkButton(actions, text='Excluir', width=69, height=33,
+                          fg_color='transparent', border_color='#9B3946', border_width=1,
+                          hover_color=RED_SOFT, text_color='#FDA4AF', corner_radius=7,
+                          font=(FONT, 11, 'bold'), command=lambda r=record: delete_record(table_name, r, navigate)).pack(side='left')
+
+        label(footer, f'Exibindo {page[0]*page_size+1}–{min((page[0]+1)*page_size,total)} de {total}', 10, MUTED).pack(side='left')
+        if total > page_size:
+            pagination = ctk.CTkFrame(footer, fg_color='transparent')
+            pagination.pack(side='right')
+            def shift(delta):
+                page[0] += delta
+                redraw()
+            ctk.CTkButton(pagination, text='Anterior', width=75, height=29,
+                          fg_color=BORDER, hover_color='#475569',
+                          state='normal' if page[0] else 'disabled',
+                          command=lambda: shift(-1)).pack(side='left', padx=(0, 8))
+            label(pagination, f'{page[0]+1} / {maximum_page+1}', 10, MUTED).pack(side='left', padx=6)
+            ctk.CTkButton(pagination, text='Próxima', width=75, height=29,
+                          fg_color=BORDER, hover_color='#475569',
+                          state='normal' if page[0] < maximum_page else 'disabled',
+                          command=lambda: shift(1)).pack(side='left', padx=(8, 0))
+
+    def reset(*_):
+        page[0] = 0
+        redraw()
+
+    search.trace_add('write', reset)
+    ordering.trace_add('write', reset)
+    selection.trace_add('write', reset)
+    redraw()
+
+
+def delete_record(section, record, navigate):
+    aviso = ("\n\nATENÇÃO: excluir este objetivo também apagará seus aportes e sua regra de distribuição."
+             if section == 'Objetivos' else '')
+    if not messagebox.askyesno('Confirmar exclusão',
+            f"Excluir registro #{record['id']}? Esta ação não pode ser desfeita.{aviso}"):
+        return
+    try:
+        controller.excluir(CONFIG[section][0], record['id'])
+        navigate(section)
+    except Exception as exc:
+        messagebox.showerror('Não foi possível excluir', str(exc))
+
+
+def record_actions(parent, section, record, navigate, open_form):
+    actions = tk.Frame(parent, bg=CARD)
+    actions.pack(side='right', padx=(14, 0))
+    ActionButton(actions, 'Editar', lambda r=record: open_form((section, r)),
+                 primary=False, small=True).pack(side='right', padx=(8, 0))
+    ActionButton(actions, 'Excluir', lambda r=record: delete_record(section, r, navigate),
+                 primary=False, small=True).pack(side='right')
 
 
 def listing(section):
@@ -192,22 +396,50 @@ def listing(section):
         elif section == 'Regras':
             note(root, 'Distribuição do saldo',
                  'As porcentagens são sugestões. Não geram aportes automaticamente; a soma das regras não pode exceder 100%.')
-            for r in controller.sugestoes():
-                c, i = card(root, 10)
-                c.pack(fill='x', pady=3)
-                lbl(i, f"{r['descricao']} — {r['porcentagem']}%: {money(r['sugerido'])}",
-                    11, TEXT, bg=CARD).pack(anchor='w')
-        elif section == 'Objetivos':
-            for g in controller.metas():
-                c, i = card(root, 12)
+            records = controller.listar(table)
+            suggestions = {int(r['objetivo_id']): r for r in controller.sugestoes() if r.get('objetivo_id') is not None}
+            goals = {int(g['id']): g['descricao'] for g in controller.metas()}
+            if not records:
+                c, inner = card(root)
+                c.pack(fill='x', pady=(0, 8))
+                lbl(inner, 'Nenhuma regra cadastrada.', 11, MUTED, bg=CARD).pack(anchor='w')
+            for record in records:
+                c, inner = card(root, 12)
                 c.pack(fill='x', pady=(0, 7))
-                ratio = float(g['acumulado']/g['valor_meta'])
-                lbl(i, f"{g['descricao']}  ·  {money(g['acumulado'])} de {money(g['valor_meta'])}  ({ratio:.0%})",
-                    11, WHITE, True, bg=CARD).pack(anchor='w')
-                progress(i, ratio, GREEN, height=8, animate=False).pack(
-                    fill='x', pady=(6, 0))
-        table_rows(root, controller.listar(table),
-                   spec, open_form, section, navigate)
+                record_actions(inner, section, record, navigate, open_form)
+                info = tk.Frame(inner, bg=CARD)
+                info.pack(side='left', fill='x', expand=True)
+                suggestion = suggestions.get(int(record['objetivo_id']))
+                description = (suggestion or {}).get('descricao') or goals.get(int(record['objetivo_id']), 'Objetivo não encontrado')
+                percentage = record['porcentagem']
+                text = f"{description}  —  {percentage}%"
+                if suggestion is not None:
+                    text += f"  ·  Valor sugerido: {money(suggestion['sugerido'])}"
+                lbl(info, text, 11, TEXT, bg=CARD, wraplength=850).pack(anchor='w', pady=4)
+            return
+        elif section == 'Objetivos':
+            goals = controller.metas()
+            records = {int(r['id']): r for r in controller.listar(table)}
+            if not goals:
+                c, inner = card(root)
+                c.pack(fill='x', pady=(0, 8))
+                lbl(inner, 'Nenhum objetivo cadastrado.', 11, MUTED, bg=CARD).pack(anchor='w')
+            for goal in goals:
+                record = records.get(int(goal['id']), goal)
+                c, inner = card(root, 14)
+                c.pack(fill='x', pady=(0, 8))
+                record_actions(inner, section, record, navigate, open_form)
+                content = tk.Frame(inner, bg=CARD)
+                content.pack(side='left', fill='x', expand=True)
+                total = goal['valor_meta']
+                ratio = max(0.0, float(goal['acumulado'] / total)) if total else 0.0
+                lbl(content,
+                    f"{goal['descricao']}  ·  {money(goal['acumulado'])} de {money(total)}  ({ratio:.0%})",
+                    11, WHITE, True, bg=CARD, wraplength=900).pack(anchor='w')
+                progress(content, min(ratio, 1.0), GREEN, height=8, animate=False).pack(
+                    fill='x', pady=(9, 2))
+            return
+        table_rows(root, controller.listar(table), spec, open_form, section, navigate)
     return render
 
 
